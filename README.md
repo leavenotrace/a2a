@@ -60,8 +60,8 @@ agent-management-system/
 ### 1. 克隆项目
 
 ```bash
-git clone https://github.com/your-username/agent-management-system.git
-cd agent-management-system
+git clone https://github.com/leavenotrace/a2a.git
+cd a2a
 ```
 
 ### 2. 安装依赖
@@ -399,7 +399,7 @@ pm2 status
 
 ## 👥 维护者
 
-- [@your-username](https://github.com/your-username)
+- [@leavenotrace](https://github.com/leavenotrace)
 
 ## 🙏 致谢
 
