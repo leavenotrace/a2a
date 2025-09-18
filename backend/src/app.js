@@ -7,7 +7,7 @@ const socketIo = require('socket.io');
 require('dotenv').config();
 
 const sequelize = require('./config/database');
-const redisClient = require('./config/redis');
+const { client: redisClient, connectRedis, disconnectRedis } = require('./config/redis');
 const logger = require('./utils/logger');
 
 const app = express();
@@ -113,6 +113,9 @@ async function startServer() {
     await sequelize.authenticate();
     logger.info('数据库连接成功');
 
+    // 连接Redis（可选）
+    await connectRedis();
+
     // 启动服务器
     server.listen(PORT, () => {
       logger.info(`服务器运行在端口 ${PORT}`);
@@ -137,10 +140,10 @@ async function startServer() {
 // 优雅关闭
 process.on('SIGTERM', async () => {
   logger.info('收到SIGTERM信号，正在关闭服务器...');
-  server.close(() => {
+  server.close(async () => {
     logger.info('HTTP服务器已关闭');
-    sequelize.close();
-    redisClient.quit();
+    await sequelize.close();
+    await disconnectRedis();
     process.exit(0);
   });
 });

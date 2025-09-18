@@ -141,6 +141,7 @@ const requireOwnershipOrAdmin = (resourceUserIdField = 'userId') => {
 };
 
 module.exports = {
+  authenticate: authenticateToken, // 添加别名
   authenticateToken,
   requireRole,
   optionalAuth,

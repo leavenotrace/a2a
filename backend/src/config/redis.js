@@ -1,30 +1,61 @@
 const redis = require('redis');
+const logger = require('../utils/logger');
 require('dotenv').config();
 
 const client = redis.createClient({
-  host: process.env.REDIS_HOST || 'localhost',
-  port: process.env.REDIS_PORT || 6379,
+  socket: {
+    host: process.env.REDIS_HOST || 'localhost',
+    port: process.env.REDIS_PORT || 6379,
+    connectTimeout: 5000,
+    lazyConnect: true
+  },
   password: process.env.REDIS_PASSWORD || undefined,
-  retry_strategy: (options) => {
-    if (options.error && options.error.code === 'ECONNREFUSED') {
-      return new Error('Redis服务器拒绝连接');
-    }
-    if (options.total_retry_time > 1000 * 60 * 60) {
-      return new Error('重试时间已用尽');
-    }
-    if (options.attempt > 10) {
-      return undefined;
-    }
-    return Math.min(options.attempt * 100, 3000);
-  }
+  retryDelayOnFailover: 100,
+  maxRetriesPerRequest: 3
 });
 
 client.on('connect', () => {
-  console.log('Redis客户端已连接');
+  logger.info('Redis客户端已连接');
+});
+
+client.on('ready', () => {
+  logger.info('Redis客户端准备就绪');
 });
 
 client.on('error', (err) => {
-  console.error('Redis连接错误:', err);
+  logger.error('Redis连接错误:', err.message);
 });
 
-module.exports = client;
+client.on('end', () => {
+  logger.info('Redis连接已断开');
+});
+
+// 连接Redis（可选，因为设置了lazyConnect）
+async function connectRedis() {
+  try {
+    if (!client.isOpen) {
+      await client.connect();
+      logger.info('Redis连接成功');
+    }
+  } catch (error) {
+    logger.warn('Redis连接失败，将在需要时重试:', error.message);
+  }
+}
+
+// 优雅关闭Redis连接
+async function disconnectRedis() {
+  try {
+    if (client.isOpen) {
+      await client.quit();
+      logger.info('Redis连接已关闭');
+    }
+  } catch (error) {
+    logger.error('关闭Redis连接时出错:', error.message);
+  }
+}
+
+module.exports = {
+  client,
+  connectRedis,
+  disconnectRedis
+};
